@@ -1,0 +1,7 @@
+{
+  "name": "City After Dark",
+  "description": "An expansive 3D open-world action-adventure and city simulation with an engaging story campaign.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
