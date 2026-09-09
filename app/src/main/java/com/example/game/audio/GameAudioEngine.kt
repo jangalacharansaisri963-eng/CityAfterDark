@@ -167,6 +167,33 @@ class GameAudioEngine {
         }
     }
 
+    fun playHonkSound() {
+        if (isMuted) return
+        thread {
+            try {
+                val sampleRate = 22050
+                val samples = 4400 // ~0.2 sec
+                val buf = ShortArray(samples)
+                for (i in buf.indices) {
+                    // Dual tone car horn: 440Hz + 550Hz
+                    val s1 = sin((i.toDouble() / sampleRate) * 2.0 * PI * 440.0)
+                    val s2 = sin((i.toDouble() / sampleRate) * 2.0 * PI * 554.0)
+                    val envelope = if (i > samples - 500) (samples - i) / 500.0 else 1.0
+                    val s = ((s1 + s2) * 0.5) * envelope
+                    buf[i] = (s * masterVolume * 22000).toInt().toShort()
+                }
+                val track = AudioTrack.Builder()
+                    .setAudioAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_GAME).build())
+                    .setAudioFormat(AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT).setSampleRate(sampleRate).setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build())
+                    .setBufferSizeInBytes(buf.size * 2)
+                    .setTransferMode(AudioTrack.MODE_STATIC)
+                    .build()
+                track.write(buf, 0, buf.size)
+                track.play()
+            } catch (_: Exception) {}
+        }
+    }
+
     fun stop() {
         isRunning = false
         try {

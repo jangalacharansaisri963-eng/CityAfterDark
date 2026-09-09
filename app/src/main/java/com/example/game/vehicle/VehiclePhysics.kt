@@ -26,10 +26,30 @@ object VehiclePhysics {
         val physics = vehicleEntity.get<PhysicsComponent>()
 
         val type = vehicle.type
-        val maxSpeed = type.maxSpeed
-        val accel = type.acceleration
+        var maxSpeed = type.maxSpeed
+        var accel = type.acceleration
         val brakePower = type.brakePower
         val handling = type.handling
+
+        // Nitro turbo boost handling
+        if (vehicle.isNitroActive && vehicle.nitro > 0f && throttleInput > 0.05f) {
+            accel *= 2.2f
+            maxSpeed *= 1.35f
+            vehicle.nitro = (vehicle.nitro - 28f * deltaTime).coerceAtLeast(0f)
+            if (vehicle.nitro <= 0f) vehicle.isNitroActive = false
+        } else {
+            vehicle.isNitroActive = false
+            vehicle.nitro = (vehicle.nitro + 10f * deltaTime).coerceAtMost(vehicle.maxNitro)
+        }
+
+        // Engine condition affects max speed
+        if (vehicle.health <= 0f) {
+            maxSpeed = 0f
+            accel = 0f
+        } else if (vehicle.health < 30f) {
+            maxSpeed *= 0.5f
+            accel *= 0.4f
+        }
 
         // Accelerate or brake
         if (throttleInput > 0.05f) {
@@ -66,7 +86,7 @@ object VehiclePhysics {
         vehicle.currentSpeed = vehicle.currentSpeed.coerceIn(-maxSpeed * 0.35f, maxSpeed)
 
         // Steering
-        val speedRatio = abs(vehicle.currentSpeed) / maxSpeed
+        val speedRatio = abs(vehicle.currentSpeed) / maxSpeed.coerceAtLeast(1f)
         if (speedRatio > 0.02f) {
             val turnDirection = if (vehicle.currentSpeed >= 0f) 1f else -1f
             val steerMultiplier = if (handbrake) 1.6f else 1.0f // Handbrake slide turn
@@ -94,6 +114,9 @@ object VehiclePhysics {
             val nextPos = Vector3(nextX, 0f, nextZ)
             if (nextPos.distanceToXZ(obs.position) < obs.boundsRadius + carRadius) {
                 collided = true
+                // Damage based on impact speed
+                val impactDamage = (abs(vehicle.currentSpeed) * 1.5f).coerceAtLeast(5f)
+                vehicle.health = (vehicle.health - impactDamage).coerceAtLeast(0f)
                 // Dampen speed on impact
                 vehicle.currentSpeed = -vehicle.currentSpeed * 0.25f
                 break

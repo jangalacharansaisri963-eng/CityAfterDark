@@ -287,6 +287,20 @@ object CityBuilder {
             add(InteractiveComponent(InteractionType.TAXI_PASSENGER, "START TAXI DISPATCH FARE"))
             add(DistrictComponent(District.DOWNTOWN))
         }
+
+        // Financial District ATM Cyber-Terminal
+        em.createEntity("FinancialATM").apply {
+            add(TransformComponent(position = Vector3(32f, 0f, 150f)))
+            add(InteractiveComponent(InteractionType.ATM_TERMINAL, "BYPASS ATM TERMINAL ($ CASH)"))
+            add(DistrictComponent(District.FINANCIAL))
+        }
+
+        // Real Estate Agency in Downtown
+        em.createEntity("RealEstateAgency").apply {
+            add(TransformComponent(position = Vector3(68f, 0f, 54f)))
+            add(InteractiveComponent(InteractionType.REAL_ESTATE_SIGN, "BROWSE PROPERTIES & SAFEHOUSES"))
+            add(DistrictComponent(District.DOWNTOWN))
+        }
     }
 
     private fun spawnInitialVehicles(em: EntityManager) {

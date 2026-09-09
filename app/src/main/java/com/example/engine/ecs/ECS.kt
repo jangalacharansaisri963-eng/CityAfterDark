@@ -33,8 +33,18 @@ data class VehicleComponent(
     var isPlayerDriven: Boolean = false,
     var engineRunning: Boolean = true,
     var headlightsOn: Boolean = false,
-    var health: Float = 100f
-) : Component
+    var health: Float = 100f,
+    var maxHealth: Float = 100f,
+    var nitro: Float = 100f,
+    var maxNitro: Float = 100f,
+    var isNitroActive: Boolean = false,
+    var underglowColor: Long = 0xFF00E5FF,
+    var sirenActive: Boolean = false
+) : Component {
+    var nitroAmount: Float
+        get() = nitro
+        set(v) { nitro = v }
+}
 
 enum class PedestrianState {
     IDLE,
@@ -68,7 +78,9 @@ enum class InteractionType {
     SAFEHOUSE,
     NPC_TALK,
     TAXI_PASSENGER,
-    STREET_RACE_MARKER
+    STREET_RACE_MARKER,
+    ATM_TERMINAL,
+    REAL_ESTATE_SIGN
 }
 
 data class InteractiveComponent(

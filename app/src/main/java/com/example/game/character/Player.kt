@@ -3,6 +3,9 @@ package com.example.game.character
 import com.example.engine.ecs.Entity
 import com.example.engine.gl.CharacterMeshFactory
 import com.example.engine.math.Vector3
+import com.example.game.features.ConsumableType
+import com.example.game.features.InventorySystem
+import com.example.game.features.WeaponInventory
 import com.example.game.world.StaticWorldObject
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -15,6 +18,7 @@ enum class PlayerState {
     RUNNING,
     SPRINTING,
     JUMPING,
+    ROLLING,
     DRIVING
 }
 
@@ -36,8 +40,14 @@ class Player {
 
     var health: Float = 100f
     var maxHealth: Float = 100f
+    var armor: Float = 100f
+    var maxArmor: Float = 100f
     var stamina: Float = 100f
     var maxStamina: Float = 100f
+    var focus: Float = 100f
+    var maxFocus: Float = 100f
+    var isFocusActive: Boolean = false
+
     var money: Int = 1250 // Initial starting cash
 
     var currentVehicle: Entity? = null
@@ -45,6 +55,12 @@ class Player {
 
     var isSprinting: Boolean = false
     var isGrounded: Boolean = true
+    var isRolling: Boolean = false
+    var rollTimer: Float = 0f
+
+    // Combat & Inventory
+    val weapons = WeaponInventory()
+    val inventory = InventorySystem()
 
     // Animation state
     var animTimer: Float = 0f
@@ -128,6 +144,7 @@ class Player {
             if (canMoveZ) position.z = nextZ
 
             state = when {
+                isRolling -> PlayerState.ROLLING
                 !isGrounded -> PlayerState.JUMPING
                 isSprinting -> PlayerState.SPRINTING
                 inputMagnitude > 0.6f -> PlayerState.RUNNING
@@ -140,10 +157,29 @@ class Player {
             val maxSwing = if (isSprinting) 45f else 28f
             limbSwingAngle = sin(animTimer) * maxSwing
         } else {
-            if (isGrounded) {
+            if (isGrounded && !isRolling) {
                 state = PlayerState.IDLE
                 limbSwingAngle = 0f
             }
+        }
+
+        // Handle Dodge Roll Timer
+        if (isRolling) {
+            rollTimer -= deltaTime
+            val camRad = yaw * (PI.toFloat() / 180f)
+            position.x += sin(camRad) * 8f * deltaTime
+            position.z += cos(camRad) * 8f * deltaTime
+            if (rollTimer <= 0f) {
+                isRolling = false
+            }
+        }
+
+        // Focus meter regeneration or depletion
+        if (isFocusActive) {
+            focus = (focus - 30f * deltaTime).coerceAtLeast(0f)
+            if (focus <= 0f) isFocusActive = false
+        } else {
+            focus = (focus + 12f * deltaTime).coerceAtMost(maxFocus)
         }
 
         // Handle Jump & Gravity
@@ -160,11 +196,77 @@ class Player {
     }
 
     fun jump() {
-        if (isGrounded && !isInsideVehicle) {
+        if (isGrounded && !isInsideVehicle && !isRolling) {
             velocity.y = 7.5f
             isGrounded = false
             state = PlayerState.JUMPING
         }
+    }
+
+    fun roll() {
+        if (isGrounded && !isInsideVehicle && !isRolling && stamina >= 20f) {
+            isRolling = true
+            rollTimer = 0.45f
+            stamina = (stamina - 20f).coerceAtLeast(0f)
+            state = PlayerState.ROLLING
+        }
+    }
+
+    fun toggleFocus() {
+        if (focus > 15f || isFocusActive) {
+            isFocusActive = !isFocusActive
+        }
+    }
+
+    fun takeDamage(amount: Float) {
+        if (isRolling) return // Invulnerable during combat roll!
+        var remaining = amount
+        if (armor > 0f) {
+            if (armor >= remaining) {
+                armor -= remaining
+                remaining = 0f
+            } else {
+                remaining -= armor
+                armor = 0f
+            }
+        }
+        if (remaining > 0f) {
+            health = (health - remaining).coerceAtLeast(0f)
+        }
+    }
+
+    fun heal(amount: Float) {
+        health = (health + amount).coerceAtMost(maxHealth)
+    }
+
+    fun addArmor(amount: Float) {
+        armor = (armor + amount).coerceAtMost(maxArmor)
+    }
+
+    fun useConsumable(type: ConsumableType): Boolean {
+        if (inventory.useItem(type)) {
+            when (type) {
+                ConsumableType.DAN_COLA -> {
+                    stamina = (stamina + 45f).coerceAtMost(maxStamina)
+                }
+                ConsumableType.FIRST_AID -> {
+                    heal(60f)
+                }
+                ConsumableType.ARMOR_PLATE -> {
+                    addArmor(100f)
+                }
+                ConsumableType.ADRENALINE -> {
+                    focus = maxFocus
+                }
+            }
+            return true
+        }
+        return false
+    }
+
+    fun useConsumable(id: String): Boolean {
+        val type = ConsumableType.values().find { it.id == id } ?: return false
+        return useConsumable(type)
     }
 
     fun setOutfit(outfit: Outfit) {
@@ -229,6 +331,24 @@ class Player {
                 jacketColor = floatArrayOf(0.95f, 0.78f, 0.15f, 1f),
                 pantsColor = floatArrayOf(0.08f, 0.08f, 0.1f, 1f),
                 shoesColor = floatArrayOf(0.95f, 0.78f, 0.15f, 1f)
+            ),
+            Outfit(
+                id = "outfit_ghost_recon",
+                name = "Ghost Recon Spec-Ops",
+                description = "Urban tactical camouflage combat armor with night-vision harness.",
+                price = 3200,
+                jacketColor = floatArrayOf(0.18f, 0.22f, 0.20f, 1f),
+                pantsColor = floatArrayOf(0.15f, 0.18f, 0.16f, 1f),
+                shoesColor = floatArrayOf(0.08f, 0.09f, 0.08f, 1f)
+            ),
+            Outfit(
+                id = "outfit_hyper_ronin",
+                name = "Hyper Neon Ronin",
+                description = "Vibrant magenta and violet synthetic weave with holographic trims.",
+                price = 6000,
+                jacketColor = floatArrayOf(0.92f, 0.10f, 0.55f, 1f),
+                pantsColor = floatArrayOf(0.25f, 0.05f, 0.35f, 1f),
+                shoesColor = floatArrayOf(0.92f, 0.10f, 0.55f, 1f)
             )
         )
     }

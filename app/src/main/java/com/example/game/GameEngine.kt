@@ -54,7 +54,22 @@ class GameEngine(private val context: Context) {
     // Observable Game State for UI
     var currentDistrict by mutableStateOf(District.DOWNTOWN)
     var interactionPrompt by mutableStateOf<String?>(null)
-    private var nearbyInteractiveTarget: InteractiveComponent? = null
+    var nearbyInteractiveTarget: InteractiveComponent? = null
+
+    // 20+ New Feature Systems
+    val wantedSystem = com.example.game.features.WantedSystem()
+    val radioSystem = com.example.game.features.RadioSystem()
+    val skillTree = com.example.game.features.SkillTreeSystem()
+    val realEstate = com.example.game.features.RealEstateSystem()
+    val driftTracker = com.example.game.features.DriftScoreTracker()
+    var customGpsWaypoint by mutableStateOf<Vector3?>(null)
+
+    // Modals & Dialog state
+    var showAtmHackDialog by mutableStateOf(false)
+    var showRealEstateDialog by mutableStateOf(false)
+    var showPhoneDialog by mutableStateOf(false)
+    var showPhotoModeDialog by mutableStateOf(false)
+    var showSkillTreeDialog by mutableStateOf(false)
 
     var activeDialogue by mutableStateOf<DialogueLine?>(null)
     private var pendingDialogues: List<DialogueLine> = emptyList()
@@ -110,12 +125,15 @@ class GameEngine(private val context: Context) {
     fun update(deltaTime: Float) {
         if (isPaused) return
 
+        // Time Dilation when Bullet-Time Focus Mode is active
+        val dt = if (player.isFocusActive) deltaTime * 0.4f else deltaTime
+
         // 1. Day / Night & Weather Simulation
-        dayNightSystem.update(deltaTime)
+        dayNightSystem.update(dt)
         audioEngine.setWeatherRaining(dayNightSystem.weather == WeatherType.RAIN)
 
         // 2. Road Network & Traffic Lights
-        cityData.roadNetwork.update(deltaTime)
+        cityData.roadNetwork.update(dt)
 
         // 3. District detection
         currentDistrict = CityBuilder.getDistrictAt(player.position.x, player.position.z)
@@ -134,7 +152,7 @@ class GameEngine(private val context: Context) {
 
                 VehiclePhysics.updateVehicle(
                     vehicleEntity = currentVeh,
-                    deltaTime = deltaTime,
+                    deltaTime = dt,
                     throttleInput = finalThrottle,
                     steeringInput = finalSteer,
                     handbrake = handbrake,
@@ -145,12 +163,20 @@ class GameEngine(private val context: Context) {
                 player.position = trans.position.copy()
                 vehicleSpeedKmh = vComp.currentSpeed * 3.6f
 
+                // Stunt Drift calculation & real-time cash awards
+                val driftAward = driftTracker.recordDrift(vehicleSpeedKmh, handbrake, finalSteer, dt)
+                if (driftAward > 0) {
+                    val finalCash = if (skillTree.hasPerk("perk_drift")) driftAward * 2 else driftAward
+                    player.money += finalCash
+                    skillTree.addXP(35)
+                }
+
                 // Audio
                 val speedRatio = abs(vComp.currentSpeed) / vComp.type.maxSpeed
                 audioEngine.updateVehicleAudio(true, speedRatio)
 
                 // Camera follow vehicle
-                camera.update(deltaTime, trans.position, true, abs(vComp.currentSpeed), cityData.staticObjects)
+                camera.update(dt, trans.position, true, abs(vComp.currentSpeed), cityData.staticObjects)
             }
         } else {
             isDrivingVehicle = false
@@ -158,7 +184,7 @@ class GameEngine(private val context: Context) {
             audioEngine.updateVehicleAudio(false, 0f)
 
             player.update(
-                deltaTime = deltaTime,
+                deltaTime = dt,
                 inputX = inputJoystickX,
                 inputY = inputJoystickY,
                 cameraYaw = camera.yaw,
@@ -166,20 +192,24 @@ class GameEngine(private val context: Context) {
             )
 
             // Camera follow player
-            camera.update(deltaTime, player.position, false, 0f, cityData.staticObjects)
+            camera.update(dt, player.position, false, 0f, cityData.staticObjects)
         }
 
         // 5. Traffic AI Simulation
-        trafficSystem.update(deltaTime, player.position)
+        trafficSystem.update(dt, player.position)
 
         // 6. Pedestrian AI Simulation
-        pedestrianSystem.update(deltaTime, player.position)
+        pedestrianSystem.update(dt, player.position)
 
-        // 7. Interactive Context Trigger Checks
+        // 7. Passive Real Estate Revenue & Wanted Police Cooldown
+        realEstate.update(dt)
+        wantedSystem.update(dt, isHiddenOrFar = !isDrivingVehicle || vehicleSpeedKmh < 15f)
+
+        // 8. Interactive Context Trigger Checks
         updateInteractionPrompt()
 
-        // 8. Story Mission Progress Check
-        updateMissionProgress(deltaTime)
+        // 9. Story Mission Progress Check
+        updateMissionProgress(dt)
     }
 
     private fun updateInteractionPrompt() {
@@ -277,7 +307,45 @@ class GameEngine(private val context: Context) {
                 saveToastMessage = "Street Circuit Won: +$2,500 Prize Money!"
                 audioEngine.playFanfareSound()
             }
+            InteractionType.ATM_TERMINAL -> {
+                showAtmHackDialog = true
+            }
+            InteractionType.REAL_ESTATE_SIGN -> {
+                showRealEstateDialog = true
+            }
             else -> {}
+        }
+    }
+
+    fun toggleNitro() {
+        val veh = player.currentVehicle?.get<VehicleComponent>() ?: return
+        veh.isNitroActive = !veh.isNitroActive
+    }
+
+    fun toggleHeadlights() {
+        val veh = player.currentVehicle?.get<VehicleComponent>() ?: return
+        veh.headlightsOn = !veh.headlightsOn
+    }
+
+    fun honkVehicle() {
+        audioEngine.playHonkSound()
+        val pedestrians = entityManager.getEntitiesWith<com.example.engine.ecs.PedestrianComponent>()
+        for (p in pedestrians) {
+            val trans = p.get<TransformComponent>() ?: continue
+            if (trans.position.distanceToXZ(player.position) < 22f) {
+                p.get<com.example.engine.ecs.PedestrianComponent>()?.state = com.example.engine.ecs.PedestrianState.FLEEING
+            }
+        }
+    }
+
+    fun fireActiveWeapon() {
+        if (player.isInsideVehicle) return
+        val fired = player.weapons.fire()
+        if (fired) {
+            audioEngine.playClickSound()
+            if (player.weapons.currentWeapon.type != com.example.game.features.WeaponType.FISTS) {
+                wantedSystem.addHeat(25f)
+            }
         }
     }
 

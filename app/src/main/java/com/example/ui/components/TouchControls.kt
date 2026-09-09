@@ -28,6 +28,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -147,15 +148,54 @@ fun OnFootActionControls(
     isSprinting: Boolean,
     onToggleSprint: () -> Unit,
     onJump: () -> Unit,
+    onRoll: () -> Unit,
+    onAttack: () -> Unit,
+    onToggleFocus: () -> Unit,
+    isFocusActive: Boolean,
+    currentWeaponName: String,
+    currentWeaponAmmo: String,
+    onNextWeapon: () -> Unit,
+    onOpenPhone: () -> Unit,
     interactionPrompt: String?,
     onInteract: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.padding(16.dp),
+        modifier = modifier.padding(12.dp),
         horizontalAlignment = Alignment.End,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        // Weapon quick switch bar
+        Surface(
+            onClick = onNextWeapon,
+            color = Color(0xD90D1117),
+            shape = RoundedCornerShape(12.dp),
+            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFF00E5FF)),
+            modifier = Modifier.testTag("btn_switch_weapon")
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = currentWeaponName.uppercase(),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = currentWeaponAmmo,
+                    color = Color(0xFF00E5FF),
+                    fontWeight = FontWeight.Black,
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("⟳", color = Color(0xFFFFD600), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+
         // Contextual Interaction Button (Enter car, Talk, Store, Mission)
         if (interactionPrompt != null) {
             Button(
@@ -163,7 +203,7 @@ fun OnFootActionControls(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD600)),
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
-                    .height(48.dp)
+                    .height(44.dp)
                     .testTag("btn_interact")
             ) {
                 Icon(
@@ -176,12 +216,86 @@ fun OnFootActionControls(
                     text = interactionPrompt,
                     color = Color.Black,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp
+                    fontSize = 11.sp
                 )
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Action Buttons Row 1: Attack / Fire & Bullet-Time Focus
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Focus Bullet-Time
+            Surface(
+                onClick = onToggleFocus,
+                shape = CircleShape,
+                color = if (isFocusActive) Color(0xFFFFD600) else Color(0xCC263238),
+                border = androidx.compose.foundation.BorderStroke(2.dp, if (isFocusActive) Color.White else Color(0x66FFD600)),
+                modifier = Modifier
+                    .size(48.dp)
+                    .testTag("btn_focus")
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "FOCUS",
+                        color = if (isFocusActive) Color.Black else Color.White,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+            }
+
+            // Phone Shortcut
+            Surface(
+                onClick = onOpenPhone,
+                shape = CircleShape,
+                color = Color(0xCC00E5FF),
+                border = androidx.compose.foundation.BorderStroke(2.dp, Color.White),
+                modifier = Modifier
+                    .size(48.dp)
+                    .testTag("btn_phone")
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(text = "PHONE", color = Color.Black, fontSize = 9.sp, fontWeight = FontWeight.Black)
+                }
+            }
+
+            // Attack / Fire Primary Action
+            Surface(
+                onClick = onAttack,
+                shape = CircleShape,
+                color = Color(0xFFD50000),
+                border = androidx.compose.foundation.BorderStroke(2.dp, Color.White),
+                modifier = Modifier
+                    .size(54.dp)
+                    .testTag("btn_attack")
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = "FIRE",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+            }
+        }
+
+        // Action Buttons Row 2: Roll, Sprint, Jump
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Dodge Roll
+            Surface(
+                onClick = onRoll,
+                shape = CircleShape,
+                color = Color(0xCC7C4DFF),
+                border = androidx.compose.foundation.BorderStroke(2.dp, Color.White),
+                modifier = Modifier
+                    .size(50.dp)
+                    .testTag("btn_roll")
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(text = "ROLL", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
             // Sprint button
             Surface(
                 onClick = onToggleSprint,
@@ -189,7 +303,7 @@ fun OnFootActionControls(
                 color = if (isSprinting) Color(0xFFFF9100) else Color(0xCC263238),
                 border = androidx.compose.foundation.BorderStroke(2.dp, if (isSprinting) Color.White else Color(0x66FFFFFF)),
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(52.dp)
                     .testTag("btn_sprint")
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -209,14 +323,14 @@ fun OnFootActionControls(
                 color = Color(0xCC00B0FF),
                 border = androidx.compose.foundation.BorderStroke(2.dp, Color.White),
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(52.dp)
                     .testTag("btn_jump")
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         text = "JUMP",
                         color = Color.White,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -230,32 +344,87 @@ fun InVehicleActionControls(
     onThrottle: (Float) -> Unit, // 1 for gas, -1 for brake/reverse, 0 for release
     onHandbrake: (Boolean) -> Unit,
     onHonk: () -> Unit,
+    onToggleNitro: () -> Unit,
+    isNitroActive: Boolean,
+    nitroPercent: Float,
+    onToggleHeadlights: () -> Unit,
+    headlightsOn: Boolean,
+    currentRadioStationName: String,
+    onNextRadio: () -> Unit,
     onExitVehicle: () -> Unit,
+    onOpenPhone: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.padding(16.dp),
+        modifier = modifier.padding(12.dp),
         horizontalAlignment = Alignment.End,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Exit Vehicle button
-        Button(
-            onClick = onExitVehicle,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xD9D50000)),
-            shape = RoundedCornerShape(10.dp),
-            modifier = Modifier
-                .height(44.dp)
-                .testTag("btn_exit_vehicle")
-        ) {
-            Text("EXIT VEHICLE", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+        // Vehicle Top Control Row (Radio bar & Exit)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            // Radio Switcher Pill
+            Surface(
+                onClick = onNextRadio,
+                shape = RoundedCornerShape(10.dp),
+                color = Color(0xCC10141C),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E5FF)),
+                modifier = Modifier.testTag("btn_radio_next")
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("📻", fontSize = 12.sp)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(currentRadioStationName, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("▶", color = Color(0xFF00E5FF), fontSize = 10.sp)
+                }
+            }
+
+            // Headlights toggle
+            Surface(
+                onClick = onToggleHeadlights,
+                shape = CircleShape,
+                color = if (headlightsOn) Color(0xFFFFD600) else Color(0xCC263238),
+                modifier = Modifier.size(34.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(if (headlightsOn) "💡" else "🔅", fontSize = 13.sp)
+                }
+            }
+
+            // Phone Shortcut
+            Surface(
+                onClick = onOpenPhone,
+                shape = CircleShape,
+                color = Color(0xCC00E5FF),
+                modifier = Modifier.size(34.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("📱", fontSize = 13.sp)
+                }
+            }
+
+            // Exit Vehicle button
+            Button(
+                onClick = onExitVehicle,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xD9D50000)),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .height(38.dp)
+                    .testTag("btn_exit_vehicle")
+            ) {
+                Text("EXIT", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Bottom) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.Bottom) {
             // Horn
             IconButton(
                 onClick = onHonk,
                 modifier = Modifier
-                    .size(46.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
                     .background(Color(0x99263238))
                     .testTag("btn_horn")
@@ -263,13 +432,44 @@ fun InVehicleActionControls(
                 Icon(Icons.Default.VolumeUp, contentDescription = "Horn", tint = Color.White)
             }
 
-            // Handbrake
+            // Nitro Turbo Button
+            Surface(
+                onClick = onToggleNitro,
+                shape = RoundedCornerShape(12.dp),
+                color = if (isNitroActive) Color(0xFF00E5FF) else Color(0xCC006064),
+                border = androidx.compose.foundation.BorderStroke(2.dp, if (isNitroActive) Color.White else Color(0x6600E5FF)),
+                modifier = Modifier
+                    .size(54.dp)
+                    .testTag("btn_nitro")
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "NITRO",
+                        color = if (isNitroActive) Color.Black else Color.White,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                    Text(
+                        text = "${(nitroPercent * 100).toInt()}%",
+                        color = if (isNitroActive) Color.Black else Color(0xFF80DEEA),
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Monospace
+                    )
+                }
+            }
+
+            // Handbrake / Drift
             Surface(
                 onClick = { onHandbrake(true) },
                 shape = RoundedCornerShape(10.dp),
                 color = Color(0xCCFF6D00),
                 modifier = Modifier
-                    .size(54.dp)
+                    .size(52.dp)
                     .testTag("btn_handbrake")
             ) {
                 Box(contentAlignment = Alignment.Center) {
@@ -284,11 +484,11 @@ fun InVehicleActionControls(
                 color = Color(0xCCE53935),
                 border = androidx.compose.foundation.BorderStroke(2.dp, Color.White),
                 modifier = Modifier
-                    .size(width = 62.dp, height = 72.dp)
+                    .size(width = 60.dp, height = 70.dp)
                     .testTag("btn_brake")
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text("BRAKE\nREV", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("BRAKE\nREV", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -299,11 +499,11 @@ fun InVehicleActionControls(
                 color = Color(0xCC00C853),
                 border = androidx.compose.foundation.BorderStroke(2.dp, Color.White),
                 modifier = Modifier
-                    .size(width = 72.dp, height = 86.dp)
+                    .size(width = 70.dp, height = 82.dp)
                     .testTag("btn_gas")
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text("GAS", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold)
+                    Text("GAS", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.ExtraBold)
                 }
             }
         }

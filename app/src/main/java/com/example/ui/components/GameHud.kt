@@ -19,11 +19,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Apartment
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MilitaryTech
+import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -42,7 +50,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.engine.ecs.EntityManager
+import com.example.engine.ecs.VehicleComponent
 import com.example.engine.math.Vector3
+import com.example.game.GameEngine
 import com.example.game.character.Player
 import com.example.game.missions.DialogueLine
 import com.example.game.missions.StoryMission
@@ -70,9 +80,10 @@ fun GameHud(
     roadNetwork: RoadNetwork,
     entityManager: EntityManager,
     targetPosition: Vector3?,
+    engine: GameEngine? = null,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier.padding(12.dp)) {
+    Box(modifier = modifier.padding(10.dp)) {
         // TOP BAR
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -80,7 +91,7 @@ fun GameHud(
             verticalAlignment = Alignment.Top
         ) {
             // Top Left: Minimap + Stats
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 MinimapView(
                     playerPos = player.position,
                     playerYaw = player.yaw,
@@ -91,53 +102,103 @@ fun GameHud(
                     onOpenFullMap = onOpenFullMap
                 )
 
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    // Health bar
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    // Health bar (Red)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Favorite,
                             contentDescription = "Health",
                             tint = Color(0xFFFF1744),
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(14.dp)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
                         Box(
                             modifier = Modifier
-                                .width(90.dp)
-                                .height(8.dp)
-                                .clip(RoundedCornerShape(4.dp))
+                                .width(84.dp)
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp))
                                 .background(Color(0x66000000))
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .width((90f * (player.health / 100f).coerceIn(0f, 1f)).dp)
-                                    .height(8.dp)
+                                    .width((84f * (player.health / 100f).coerceIn(0f, 1f)).dp)
+                                    .height(6.dp)
                                     .background(Color(0xFFFF1744))
                             )
                         }
                     }
 
-                    // Stamina bar
+                    // Body Armor Shield bar (Blue)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Security,
+                            contentDescription = "Armor",
+                            tint = Color(0xFF00E5FF),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(84.dp)
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(Color(0x66000000))
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width((84f * (player.armor / 100f).coerceIn(0f, 1f)).dp)
+                                    .height(6.dp)
+                                    .background(Color(0xFF00E5FF))
+                            )
+                        }
+                    }
+
+                    // Stamina bar (Green)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.FlashOn,
                             contentDescription = "Stamina",
                             tint = Color(0xFF00E676),
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(14.dp)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
                         Box(
                             modifier = Modifier
-                                .width(90.dp)
-                                .height(8.dp)
-                                .clip(RoundedCornerShape(4.dp))
+                                .width(84.dp)
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp))
                                 .background(Color(0x66000000))
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .width((90f * (player.stamina / 100f).coerceIn(0f, 1f)).dp)
-                                    .height(8.dp)
+                                    .width((84f * (player.stamina / 100f).coerceIn(0f, 1f)).dp)
+                                    .height(6.dp)
                                     .background(Color(0xFF00E676))
+                            )
+                        }
+                    }
+
+                    // Bullet-Time Focus bar (Amber)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.LocalFireDepartment,
+                            contentDescription = "Focus",
+                            tint = Color(0xFFFFD600),
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(84.dp)
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(Color(0x66000000))
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width((84f * (player.focus / 100f).coerceIn(0f, 1f)).dp)
+                                    .height(6.dp)
+                                    .background(Color(0xFFFFD600))
                             )
                         }
                     }
@@ -156,14 +217,14 @@ fun GameHud(
                                 text = "$",
                                 color = Color(0xFFFFD700),
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
+                                fontSize = 12.sp
                             )
                             Spacer(modifier = Modifier.width(2.dp))
                             Text(
                                 text = "%,d".format(player.money),
                                 color = Color.White,
                                 fontWeight = FontWeight.ExtraBold,
-                                fontSize = 13.sp,
+                                fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace
                             )
                         }
@@ -171,50 +232,170 @@ fun GameHud(
                 }
             }
 
-            // Top Center: District Banner & Time
+            // Top Center: District Banner, Time, and Wanted Stars
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Surface(
                     color = Color(0xD90D1117),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = RoundedCornerShape(16.dp),
                     border = androidx.compose.foundation.BorderStroke(1.dp, Color(currentDistrict.minimapColor))
                 ) {
                     Column(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 3.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
                             text = currentDistrict.title.uppercase(),
                             color = Color(currentDistrict.minimapColor),
                             fontWeight = FontWeight.Black,
-                            fontSize = 12.sp,
-                            letterSpacing = 1.5.sp
+                            fontSize = 11.sp,
+                            letterSpacing = 1.2.sp
                         )
                         Text(
                             text = "$timeString • $weatherString",
                             color = Color(0xFFB0BEC5),
-                            fontSize = 10.sp,
+                            fontSize = 9.sp,
                             fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                // Wanted Stars (0 to 5)
+                if (engine != null) {
+                    val wantedStars = engine.wantedSystem.wantedStars
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        modifier = Modifier.padding(top = 4.dp).testTag("hud_wanted_stars")
+                    ) {
+                        for (i in 1..5) {
+                            val active = i <= wantedStars
+                            Icon(
+                                imageVector = if (active) Icons.Default.Star else Icons.Default.StarBorder,
+                                contentDescription = "Wanted Star $i",
+                                tint = if (active) Color(0xFFFF1744) else Color(0x33FFFFFF),
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+
+                    // Police Radio Alert Toast
+                    if (engine.wantedSystem.policeRadioMessage != null) {
+                        Text(
+                            text = engine.wantedSystem.policeRadioMessage ?: "",
+                            color = Color(0xFFFF5252),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 2.dp)
                         )
                     }
                 }
             }
 
-            // Top Right: Pause Menu Button
-            IconButton(
-                onClick = onOpenPauseMenu,
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xCC10141C))
-                    .border(1.dp, Color.White, CircleShape)
-                    .testTag("btn_pause_menu")
-            ) {
-                Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
+            // Top Right: Game Tools & Pause Menu
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                // Phone shortcut
+                IconButton(
+                    onClick = { engine?.showPhoneDialog = true },
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xCC10141C))
+                        .border(1.dp, Color(0x6600E5FF), CircleShape)
+                        .testTag("btn_top_phone")
+                ) {
+                    Icon(Icons.Default.PhoneAndroid, contentDescription = "Phone", tint = Color(0xFF00E5FF), modifier = Modifier.size(18.dp))
+                }
+
+                // Photo mode shortcut
+                IconButton(
+                    onClick = { engine?.showPhotoModeDialog = true },
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xCC10141C))
+                        .border(1.dp, Color(0x66FFD600), CircleShape)
+                        .testTag("btn_top_photo")
+                ) {
+                    Icon(Icons.Default.CameraAlt, contentDescription = "Photo Mode", tint = Color(0xFFFFD600), modifier = Modifier.size(18.dp))
+                }
+
+                // Skill Tree shortcut
+                IconButton(
+                    onClick = { engine?.showSkillTreeDialog = true },
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xCC10141C))
+                        .border(1.dp, Color(0x6600E676), CircleShape)
+                        .testTag("btn_top_skills")
+                ) {
+                    Icon(Icons.Default.MilitaryTech, contentDescription = "Skills", tint = Color(0xFF00E676), modifier = Modifier.size(18.dp))
+                }
+
+                // Real Estate shortcut
+                IconButton(
+                    onClick = { engine?.showRealEstateDialog = true },
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xCC10141C))
+                        .border(1.dp, Color(0x66FF9100), CircleShape)
+                        .testTag("btn_top_realestate")
+                ) {
+                    Icon(Icons.Default.Apartment, contentDescription = "Properties", tint = Color(0xFFFF9100), modifier = Modifier.size(18.dp))
+                }
+
+                // Pause Menu Button
+                IconButton(
+                    onClick = onOpenPauseMenu,
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xCC10141C))
+                        .border(1.dp, Color.White, CircleShape)
+                        .testTag("btn_pause_menu")
+                ) {
+                    Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White, modifier = Modifier.size(20.dp))
+                }
             }
         }
 
-        // BOTTOM LEFT: Speedometer (when driving)
+        // CENTER TOP: Drift Points Card
+        if (engine != null && engine.driftTracker.isDrifting) {
+            Box(modifier = Modifier.align(Alignment.TopCenter).padding(top = 70.dp)) {
+                Surface(
+                    color = Color(0xF2FF6D00),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(2.dp, Color.White),
+                    modifier = Modifier.testTag("hud_drift_card")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("DRIFT", color = Color.White, fontWeight = FontWeight.Black, fontSize = 12.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "+${engine.driftTracker.currentDriftScore.toInt()} PTS",
+                            color = Color(0xFFFFEB3B),
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 14.sp,
+                            fontFamily = FontFamily.Monospace
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            "x%.1f".format(engine.driftTracker.driftMultiplier),
+                            color = Color.White,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+        }
+
+        // BOTTOM LEFT: Speedometer with Nitro & Health (when driving)
         if (isDriving) {
+            val veh = player.currentVehicle?.get<VehicleComponent>()
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -226,27 +407,141 @@ fun GameHud(
                     border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF00E5FF)),
                     modifier = Modifier.testTag("hud_speedometer")
                 ) {
+                    Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Speed, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "${abs(vehicleSpeedKmh).roundToInt()}",
+                                color = Color.White,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Black,
+                                fontFamily = FontFamily.Monospace
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(text = "KM/H", color = Color(0xFF80DEEA), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        // Nitro & Health bars
+                        if (veh != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            // Nitro bar
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("NOS", color = Color(0xFF00E5FF), fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .width(70.dp)
+                                        .height(4.dp)
+                                        .clip(RoundedCornerShape(2.dp))
+                                        .background(Color(0x66000000))
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .width((70f * (veh.nitroAmount / 100f).coerceIn(0f, 1f)).dp)
+                                            .height(4.dp)
+                                            .background(Color(0xFF00E5FF))
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            // ON-FOOT: Quick Consumable Belt (Cola, Medkit, Armor, Adrenaline)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = 140.dp)
+            ) {
+                Surface(
+                    color = Color(0xCC10141C),
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0x66FFFFFF)),
+                    modifier = Modifier.testTag("hud_consumable_belt")
+                ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.padding(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Icon(Icons.Default.Speed, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "${abs(vehicleSpeedKmh).roundToInt()}",
-                            color = Color.White,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Black,
-                            fontFamily = FontFamily.Monospace
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("KM/H", color = Color(0xFF80D8FF), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        // Cola
+                        val colaCount = player.inventory.getCount("item_cola")
+                        Surface(
+                            onClick = { player.useConsumable("item_cola") },
+                            color = Color(0x99263238),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text("🥤", fontSize = 12.sp)
+                                Text("$colaCount", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        // Medkit
+                        val medCount = player.inventory.getCount("item_medkit")
+                        Surface(
+                            onClick = { player.useConsumable("item_medkit") },
+                            color = Color(0x99263238),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text("💊", fontSize = 12.sp)
+                                Text("$medCount", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        // Armor plate
+                        val armCount = player.inventory.getCount("item_armor_plate")
+                        Surface(
+                            onClick = { player.useConsumable("item_armor_plate") },
+                            color = Color(0x99263238),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text("🛡️", fontSize = 12.sp)
+                                Text("$armCount", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        // Adrenaline
+                        val adrCount = player.inventory.getCount("item_adrenaline")
+                        Surface(
+                            onClick = { player.useConsumable("item_adrenaline") },
+                            color = Color(0x99263238),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text("⚡", fontSize = 12.sp)
+                                Text("$adrCount", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
             }
         }
 
-        // BOTTOM CENTER: Active Mission Objective Card
+        // BOTTOM CENTER: Current Mission Objective Card
         if (objectiveDescription != null && currentMission != null) {
             Surface(
                 color = Color(0xEE0B0F19),
@@ -254,11 +549,11 @@ fun GameHud(
                 border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFFD600)),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 12.dp)
+                    .padding(bottom = 10.dp)
                     .testTag("hud_mission_card")
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Box(
@@ -278,7 +573,7 @@ fun GameHud(
                         Text(
                             text = objectiveDescription,
                             color = Color.White,
-                            fontSize = 12.sp,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -287,7 +582,7 @@ fun GameHud(
                         Text(
                             text = "${distanceToObjective.roundToInt()}m",
                             color = Color(0xFF00E5FF),
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Monospace
                         )
@@ -297,7 +592,7 @@ fun GameHud(
                         Text(
                             text = "${objectiveTimer.roundToInt()}s",
                             color = Color(0xFFFF5252),
-                            fontSize = 13.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Black,
                             fontFamily = FontFamily.Monospace
                         )
